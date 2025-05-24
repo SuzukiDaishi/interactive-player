@@ -1,6 +1,6 @@
 {
   "name": "interactive-player",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A front-end interactive music audio player using AudioWorklet for javascript and typescript",
   "main": "./dist/cjs/interactive-player.cjs",
   "module": "./dist/esm/interactive-player.js",
