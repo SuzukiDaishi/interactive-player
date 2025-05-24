@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Interactive AudioWorklet Player (multi‑track)</title>
+  <style>
+    body{font:16px/1.5 system-ui,sans-serif;text-align:center;margin:2rem;}
+    button{font-size:1.2rem;margin:.5rem 1rem;padding:.4rem 1.4rem;}
+  </style>
+</head>
+<body>
+  <h1>AudioWorklet Player – preload multi‑wav</h1>
+  <p><button id="play">▶︎ Play</button><button id="stop">■ Stop</button></p>
+  <p><button id="pause">⏸️ Pause</button></p>
+  <p><input id="loopcheck" type="checkbox"><label>Loop current track</label></p>
+
+  <script type="module">
+    import Player from '/interactive-player.mjs';
+
+    /* 任意の wav を複数指定（チャンネル数は揃っていると安全） */
+    const AUDIO_URLS = [
+      { src:'./audio/01.wav', next: 0 },
+      { src:'./audio/02.wav', next: null },
+    ];
+
+    const player = new Player();
+    // まとめてプリロード
+    player.loadAll(AUDIO_URLS).catch(console.error);
+
+    let pauseToggle = false;
+
+    document.getElementById('play').onclick  = () => player.play();
+    document.getElementById('stop').onclick  = () => player.stop();
+    document.getElementById('pause').onclick = () => {
+      pauseToggle = !pauseToggle;
+      player.pause(pauseToggle);
+    };
+    document.getElementById('loopcheck').onchange = (e) => player.next(e.target.checked ? 1 : 0, 0);
+  </script>
+</body>
+</html>

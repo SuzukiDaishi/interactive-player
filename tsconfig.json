@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "./dist",
+
+    /* 2020 以上で AudioWorklet が動く */
+    "target": "ES2020",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+
+    /* 型まわり */
+    "strict": true,
+    "skipLibCheck": true,
+    "types": ["audioworklet", "node"],
+
+    /* JS は無視。JS も解析したい場合は allowJs:true で duplicate を避けるために exclude で制御 */
+    "allowJs": false,
+
+    /* import/export を楽に */
+    "esModuleInterop": true
+  },
+  "include": ["src/**/*"],
+  "exclude": ["public", "node_modules"]
+}
