@@ -78,7 +78,28 @@ export default class InteractivePlayer {
   }
 
   /** 次トラックをキューイング */
-  next(idx: number | null, currentIs: number | null = null): void {
+  async next(idx: number | null, currentIs: number | null = null): Promise<void> {
+    await this.workletReady;
     this.node.port.postMessage({ type: 'next', next: idx, currentIs });
+  }
+
+  async setFadeInSec(sec: number): Promise<void> {
+    await this.workletReady;
+    this.node.port.postMessage({
+      type: 'setFadeIn',
+      fadeInSamples: this.secToSamples(sec),
+    });
+  }
+
+  async setFadeOutSec(sec: number): Promise<void> {
+    await this.workletReady;
+    this.node.port.postMessage({
+      type: 'setFadeOut',
+      fadeOutSamples: this.secToSamples(sec),
+    });
+  }
+
+  private secToSamples(sec: number): number {
+    return Math.floor(sec * this.ctx.sampleRate);
   }
 }

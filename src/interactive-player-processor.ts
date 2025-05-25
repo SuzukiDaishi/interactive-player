@@ -19,7 +19,72 @@ type NextMsg = {
   next: number | null;
   currentIs?: number | null;
 };
-type ProcessorMsg = LoadMultiMsg | PlayMsg | StopMsg | PauseMsg | NextMsg;
+type SetFadeInMsg = {
+  type: 'setFadeIn';
+  fadeInSamples: number;
+}
+type SetFadeOutMsg = {
+  type: 'setFadeOut';
+  fadeOutSamples: number;
+};
+type ProcessorMsg = LoadMultiMsg | PlayMsg | StopMsg | PauseMsg | NextMsg | SetFadeInMsg | SetFadeOutMsg;
+
+class Fader {
+
+  public fadeInSamples: number;
+  private fadeInStart: number = 0;
+  public useFadeIn: boolean = false;
+  public fadeOutSamples: number;
+  private fadeOutStart: number = 0;
+  public useFadeOut: boolean = false;
+  private fadeOutEvent: any = null;
+  
+  constructor(fadeInSamples: number, fadeOutSamples: number) {
+    this.fadeInSamples = fadeInSamples;
+    this.fadeOutSamples = fadeOutSamples;
+  }
+
+  public startFadeIn(head: number): void {
+    this.fadeInStart = head;
+    this.useFadeIn = true;
+  }
+
+  public startFadeOut(head: number, event: any = null): void {
+    this.fadeOutEvent = event;
+    this.fadeOutStart = head;
+    this.useFadeOut = true;
+  }
+
+  public getFadeInStep(head: number): number {
+    if (!this.useFadeIn) return 1;
+    if (head < this.fadeInStart) return 0;
+    if (this.fadeInStart + this.fadeInSamples < head) {
+      this.useFadeIn = false;
+      return 1
+    };
+    const step = (head - this.fadeInStart) / this.fadeInSamples;
+    return Math.min(step, 1);
+  }
+
+  public getFadeOutStep(head: number, isPause: boolean): number {
+    if (!this.useFadeOut && !isPause) {
+      if (this.fadeOutEvent !== null) { // 完全に停止後イベントを実行
+        this.fadeOutEvent();
+        this.fadeOutEvent = null;
+      }
+      return 1;
+    }
+    if (!this.useFadeOut && isPause) return 0;
+    if (head < this.fadeOutStart) return 1;
+    if (this.fadeOutStart + this.fadeOutSamples < head) {
+      this.useFadeOut = false;
+      return 0
+    };
+    const step = 1 - (head - this.fadeOutStart) / this.fadeOutSamples;
+    return Math.max(step, 0);
+  }
+
+}
 
 class InteractivePlayerProcessor extends AudioWorkletProcessor {
   private tracks: Float32Array[][] = [];
@@ -31,6 +96,7 @@ class InteractivePlayerProcessor extends AudioWorkletProcessor {
   private current = 0;
   private next: number | null = 0;
   private transitions: Record<number, number | null> = {};
+  private fader: Fader = new Fader(440, 440);
 
   constructor() {
     super();
@@ -49,22 +115,30 @@ class InteractivePlayerProcessor extends AudioWorkletProcessor {
           break;
 
         case 'play':
-          this.playing = true;
+          if (!this.playing) this.playing = true;
           break;
 
         case 'stop':
-          this.playing = false;
-          this.head = 0;
-          this.current = this.start;
-          this.next = this.transitions[this.current] ?? null;
+          if (this.playing) {
+            this.playing = false;
+            this.head = 0;
+            this.current = this.start;
+            this.next = this.transitions[this.current] ?? null;
+          }
           break;
 
         case 'pause':
-          this.pause = data.type === 'pause';
+          if (!this.pause) {
+            this.pause = data.type === 'pause';
+            this.fader.startFadeOut(this.head);
+          }
           break;
 
         case 'resume':
-          this.pause = false;
+          if (this.pause) {
+            this.pause = false;
+            this.fader.startFadeIn(this.head);
+          }
           break;
 
         case 'next':
@@ -76,6 +150,14 @@ class InteractivePlayerProcessor extends AudioWorkletProcessor {
             this.next = data.next;
           }
           break;
+
+        case 'setFadeIn':
+          this.fader.fadeInSamples = data.fadeInSamples;
+          break;
+        
+        case 'setFadeOut':
+          this.fader.fadeOutSamples = data.fadeOutSamples;
+          break;
       }
     };
   }
@@ -86,7 +168,14 @@ class InteractivePlayerProcessor extends AudioWorkletProcessor {
   ): boolean {
     const out = outputs[0];
 
-    if (!this.playing || this.pause || this.tracks.length === 0) {
+    if (
+      (
+        !this.playing || 
+        this.pause || 
+        this.tracks.length === 0
+      ) &&
+      !this.fader.useFadeOut
+    ) {
       out.forEach(ch => ch.fill(0));
       return true;
     }
@@ -95,11 +184,15 @@ class InteractivePlayerProcessor extends AudioWorkletProcessor {
       // 遷移判定
       if (
         this.tracks[this.current].length > 0 &&
-        this.head >= this.tracks[this.current][0].length
+        this.head >= this.tracks[this.current][0].length &&
+        !this.fader.useFadeOut
       ) {
         this.head = 0;
 
-        if (this.next === null || this.next === undefined) {
+        if (
+          this.next === null || 
+          this.next === undefined
+        ) {
           this.playing = false;
           this.current = this.start;
           this.next = this.transitions[this.current] ?? null;
@@ -111,9 +204,12 @@ class InteractivePlayerProcessor extends AudioWorkletProcessor {
         }
       }
 
+      const fadeInStep = this.fader.getFadeInStep(this.head);
+      const fadeOutStep = this.fader.getFadeOutStep(this.head, this.pause);
+
       // 出力
       for (let ch = 0; ch < out.length; ch++) {
-        out[ch][i] = this.tracks[this.current][ch][this.head];
+        out[ch][i] = this.tracks[this.current][ch][this.head] * fadeInStep * fadeOutStep;
       }
 
       this.head++;
