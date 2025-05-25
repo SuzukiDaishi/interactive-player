@@ -27,8 +27,8 @@
     const player = new Player();
     // まとめてプリロード
     player.loadAll(AUDIO_URLS).catch(console.error);
-    <!-- player.setFadeInSec(0.01);
-    player.setFadeOutSec(0.01); -->
+    player.setFadeInSec(0.01);
+    player.setFadeOutSec(0.01);
 
     let pauseToggle = false;
 
