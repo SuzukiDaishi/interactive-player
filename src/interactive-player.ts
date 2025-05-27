@@ -11,8 +11,16 @@ export default class InteractivePlayer {
   private workletReady: Promise<void>;
 
   constructor() {
+    const moduleUrl =
+      // ESM (ブラウザ / Node ESM)
+      (typeof import.meta !== 'undefined' && import.meta.url) ||
+      `file://${__dirname}/`;
+    const workletUrl = new URL(
+      'interactive-player-processor.js',
+      moduleUrl,
+    );
     this.workletReady = this.ctx.audioWorklet
-      .addModule('./interactive-player-processor.mjs')
+      .addModule(workletUrl.toString())
       .then(() => {
         this.node = new AudioWorkletNode(
           this.ctx,

@@ -3,12 +3,12 @@ import { defineConfig } from 'tsup';
 
 export default defineConfig({
   entry: {
-    'interactive-player': 'src/interactive-player.ts',
-    'interactive-player-processor': 'src/interactive-player-processor.ts',
+    'interactive-player'            : 'src/interactive-player.ts',
+    'interactive-player-processor'  : 'src/interactive-player-processor.ts',
   },
   target: 'es2020',
   format: ['esm'],
-  dts: true,
+  dts: { resolve: true, },
   splitting: false,
   sourcemap: true,
   clean: true,
