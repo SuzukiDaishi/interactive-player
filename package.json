@@ -1,6 +1,6 @@
 {
   "name": "interactive-player",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "type": "module",
   "description": "A front-end interactive music audio player using AudioWorklet for javascript and typescript",
   "main": "./dist/interactive-player.js",
@@ -8,12 +8,12 @@
   "types": "./dist/interactive-player.d.ts",
   "exports": {
     ".": {
-      "types"  : "./dist/interactive-player.d.ts",
-      "import" : "./dist/interactive-player.js"
+      "types": "./dist/interactive-player.d.ts",
+      "import": "./dist/interactive-player.js"
     },
     "./processor": {
-      "types"  : "./dist/interactive-player-processor.d.ts",
-      "import" : "./dist/interactive-player-processor.js"
+      "types": "./dist/interactive-player-processor.d.ts",
+      "import": "./dist/interactive-player-processor.js"
     }
   },
   "files": [
